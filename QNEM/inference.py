@@ -8,7 +8,6 @@ from QNEM.history import History
 from time import time
 from scipy.optimize import fmin_l_bfgs_b
 import rpy2.robjects as ro
-import pandas.rpy.common as com
 
 class Learner(BaseClass):
     """
@@ -289,8 +288,7 @@ class qnem(Learner):
         corresponding times and censoring indicator vectors, using the R 
         package survival
         """
-        df = com.convert_to_r_dataframe(pd.DataFrame([Y, delta, marker]).T)
-        ro.globalenv['df'] = df
+        ro.globalenv['df'] = pd.DataFrame([Y, delta, marker]).T
         ro.r('Y = as.numeric(data.matrix(df[,1]))')
         ro.r('delta = as.numeric(data.matrix(df[,2]))')
         ro.r('marker = as.numeric(data.matrix(df[,3]))')
