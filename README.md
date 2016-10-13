@@ -8,6 +8,7 @@ You may be interested if you face a supervised problem with temporal labels and 
 You must have :
 
 - python >= 2.7
+- R >= 3.1
 
 In order to install you must have the required Python dependencies:
 
