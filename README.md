@@ -1,12 +1,36 @@
-# C-mix
+## Welcome to C-mix : a high dimensional mixture model for censored durations
 
-There a lot of things to do in order to improve the code : 
+The code provided enable you to run both C-mix and CURE models in high dimension.
+You may be interested if you face a supervised problem with temporal labels and you want to predict relative risks.
 
-- Write a `README.md`, that explains what the model does and list the dependencies
-- The dependencies can be automatically managed using pip
-- All the *.pyc and __pycache__ folders must be removed from the repo, and we must add a .gitignore file
-- We must code unittest to check that the code works properly
-- This is a companion git repo for the paper, we'll put this code in the `MLPP` later :)
-- We must procude a documentation using sphinx (it's really easy, it reads the docstrings of the python code
+## Installation 
 
-For all of this, you can look at how we do all of this in `MLPP`
+You must have :
+
+- python >= 2.7
+
+In order to install you must have the required Python dependencies:
+
+    pip install -r requirements.txt
+
+In order to install you must run
+
+    python setup.py build_ext --inplace
+
+In order to declare the package path to python you should put in the .bashrc file something like
+
+    export PYTHONPATH=$PYTHONPATH:~/Programmation/Python/?
+
+### Unittest
+
+The library can be tested simply by running
+
+    python -m unittest discover -v . "*_test.py"
+
+in terminal. This shall check that everything is working and in order...
+
+### Other files
+
+You should definitely try the notebook "C-mix tutorial". 
+It gives very useful example of how to use the model based on simulated data.
+It will be very simple then to adapt it to your own data.
