@@ -1,0 +1,6 @@
+# All hidden files except for gitignore
+.*
+!.gitignore
+
+*.pyc
+*__pycache__*
