@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # Author: Simon Bussy <simon.bussy@gmail.com>
+
 from datetime import datetime
 from time import time
 from scipy.linalg.special_matrices import toeplitz
@@ -7,8 +8,7 @@ import numpy as np
 
 
 def features_normal_cov_toeplitz(n_samples, n_features, rho=0.5):
-    """
-    Features obtained as samples of a centered Gaussian vector
+    """Features obtained as samples of a centered Gaussian vector
     with a toeplitz covariance matrix
 
     Parameters
@@ -25,9 +25,8 @@ def features_normal_cov_toeplitz(n_samples, n_features, rho=0.5):
         np.zeros(n_features), cov, size=n_samples)
 
 
-def simulationmethod(simulate_method):
-    """
-    A decorator for simulation methods.
+def simulation_method(simulate_method):
+    """A decorator for simulation methods.
     It simply calls _start_simulation and _end_simulation methods
     """
 
@@ -42,8 +41,7 @@ def simulationmethod(simulate_method):
 
 
 class Simulation:
-    """
-    This is an abstract simulation class that inherits form BaseClass
+    """This is an abstract simulation class that inherits form BaseClass
     It does nothing besides printing stuff and verbosing
     """
 
@@ -86,56 +84,70 @@ class Simulation:
 
 
 class CensoredGeomMixtureRegression(Simulation):
-    """
-    Class for the simulation of Censored Geometric Mixture Model
+    """Class for the simulation of Censored Geometric Mixture Model
 
     Parameters
     ----------
-    verbose
-    n_samples
-    n_features
-    nb_active_features
-    K
-    rho
-    pi0
-    gap
-    r_c
-    r_cf
-    p0
-    p1
-    seed
+    verbose: boolean
+        Verbose mode to detail or not ongoing tasks
+    n_samples: int
+        Number of patients
+    n_features: int
+        Number of features
+    nb_active_features: int
+        Number of active features
+    K: float
+        Value of the active coefficients
+    rho: float
+        Coefficient of the Toeplitz correlation matrix
+    pi_0: float
+        Proportion of desired low risk patients rate
+    gap: float
+        Gap value to create high/low risk groups
+    r_c: float
+        Censoring rate
+    r_cf: float
+        Confusion factors rate
+    p0: float
+        Geometric parameter for low risk patients
+    p1: float
+        Geometric parameter for high risk patients
+    seed: int
+        For reproducible simulation
 
     Attributes
     ----------
-    Y
-    Z
-    delta
+    Y: ndarray
+        Temporal data
+    Z: ndarray
+        Latent variable
+    delta: ndarray
+        Censoring indicator
     """
 
     def __init__(self, verbose, n_samples, n_features, nb_active_features,
-                 K, rho, pi0, gap, r_c, r_cf, p0, p1, seed=None):
+                 K, rho, pi_0, gap, r_c, r_cf, p0, p1, seed=None):
         Simulation.__init__(self, seed=seed, verbose=verbose)
         self.n_samples = n_samples
         self.n_features = n_features
         self.nb_active_features = nb_active_features
         self.K = K
         self.rho = rho
-        self.pi0 = pi0
+        self.pi_0 = pi_0
         self.gap = gap
         self.r_c = r_c
         self.r_cf = r_cf
         self.p0 = p0
         self.p1 = p1
 
-        # attributes that will be instantiated afterwards
+        # Attributes that will be instantiated afterwards
         self.Z = None
         self.Y = None
         self.delta = None
 
     @staticmethod
     def logistic_grad(z):
-        """
-        Overflow proof computation of 1 / (1 + exp(-z)))
+        """Overflow proof computation of 1 / (1 + exp(-z)))
         """
         idx_pos = np.where(z >= 0.)
         idx_neg = np.where(z < 0.)
@@ -146,8 +158,7 @@ class CensoredGeomMixtureRegression(Simulation):
 
     @staticmethod
     def poldeg2_solver(a=0, b=0, c=0):
-        """
-        2nd order polynomial solver
+        """2nd order polynomial solver
         """
         if a == 0:
             if b == 0:
@@ -162,16 +173,15 @@ class CensoredGeomMixtureRegression(Simulation):
             sqrt_delta = np.sqrt(delta)
             return [(-b - sqrt_delta) / (2 * a), (-b + sqrt_delta) / (2 * a)]
 
-    @simulationmethod
+    @simulation_method
     def simulate(self):
-        """
-        Launch simulation of the data.
+        """Launch simulation of the data.
         """
         n_samples = self.n_samples
         n_features = self.n_features
         nb_active_features = self.nb_active_features
         K = self.K
-        pi0 = self.pi0
+        pi_0 = self.pi_0
         gap = self.gap
         p0 = self.p0
         p1 = self.p1
@@ -185,12 +195,12 @@ class CensoredGeomMixtureRegression(Simulation):
         features = features_normal_cov_toeplitz(n_samples, n_features, rho)
 
         # Add class relative information on the design matrix    
-        A = np.random.choice(range(n_samples), size=int((1 - pi0) * n_samples),
+        A = np.random.choice(range(n_samples), size=int((1 - pi_0) * n_samples),
                              replace=False)
         A_ = np.delete(range(n_samples), A)
 
-        index_plus_gap = nb_active_features + \
-                         int((n_features - nb_active_features) * r_cf)
+        index_plus_gap = nb_active_features + int(
+            (n_features - nb_active_features) * r_cf)
         features[A, :index_plus_gap] += gap
         features[A_, :index_plus_gap] -= gap
 
@@ -207,17 +217,17 @@ class CensoredGeomMixtureRegression(Simulation):
         n_samples_class_1 = np.sum(Z)
         n_samples_class_0 = n_samples - n_samples_class_1
         T = np.empty(n_samples)
-        pi0_est = 1 - Z.mean()
+        pi_0_est = 1 - Z.mean()
         T[Z == 0] = np.random.geometric(p0, size=n_samples_class_0)
 
         # Compute p_c to obtain censoring rate r_c
         r_c_ = 1 - r_c
         p0_ = 1 - p0
         p1_ = 1 - p1
-        pi0_ = 1 - pi0_est
+        pi_0_ = 1 - pi_0_est
         a = r_c_ * p0_ * p1_
-        b = p0 * pi0_est * p1_ + p1 * pi0_ * p0_ - r_c_ * (p1_ + p0_)
-        c = r_c_ - p0 * pi0_est - p1 * pi0_
+        b = p0 * pi_0_est * p1_ + p1 * pi_0_ * p0_ - r_c_ * (p1_ + p0_)
+        c = r_c_ - p0 * pi_0_est - p1 * pi_0_
         res = self.poldeg2_solver(a=a, b=b, c=c)
         if isinstance(res, list):
             if res[0] > 0:

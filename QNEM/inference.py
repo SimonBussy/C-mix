@@ -2,20 +2,20 @@
 # Author: Simon Bussy <simon.bussy@gmail.com>
 
 import numpy as np
-import pandas as pd
 from datetime import datetime
 from QNEM.history import History
 from time import time
 from scipy.optimize import fmin_l_bfgs_b
 import rpy2.robjects as ro
 import rpy2.robjects.numpy2ri
+
 rpy2.robjects.numpy2ri.activate()
 
 
 class Learner:
+    """The base class for a Solver. This class should not be used by end-users.
     """
-    The base class for a Solver. This class should not be used by end-users.
-    """
+
     def __init__(self, verbose=True, print_every=10):
         self.verbose = verbose
         self.print_every = print_every
@@ -32,7 +32,7 @@ class Learner:
         self._numeric_time_start = time()
 
         if self.verbose:
-            print "Launching the solver " + self.__class__.__name__ + "..."
+            print("Launching the solver " + self.__class__.__name__ + "...")
 
     def _end_solve(self):
         self.time_end = self._get_now()
@@ -40,16 +40,15 @@ class Learner:
         self.time_elapsed = t - self._numeric_time_start
 
         if self.verbose:
-            print "Done solving using " + self.__class__.__name__ + " in " \
-                        + "%.2e seconds" % self.time_elapsed
+            print("Done solving using " + self.__class__.__name__ + " in "
+                  + "%.2e seconds" % self.time_elapsed)
 
     @staticmethod
     def _get_now():
         return str(datetime.now()).replace(" ", "_").replace(":", "-")
 
     def get_history(self, key=None):
-        """
-        Return history of the solver
+        """Return history of the solver
 
         Parameters
         ----------
@@ -73,8 +72,7 @@ class Learner:
 
 
 class MixtureGeoms(Learner):
-    """
-    EM Algorithm for fitting a censoring mixture of geometric distributions
+    """EM Algorithm for fitting a censoring mixture of geometric distributions
         with two components
 
     Class attributes
@@ -83,6 +81,7 @@ class MixtureGeoms(Learner):
         The parameters p0, p1 and pi of the mixture and pc the censoring 
         parameter
     """
+
     def __init__(self, max_iter, verbose, print_every, tol):
         Learner.__init__(self, verbose=verbose, print_every=print_every)
         self.max_iter = max_iter
@@ -91,6 +90,7 @@ class MixtureGeoms(Learner):
         self.tol = tol
         self._init_coeffs(4)
 
+        # Attributes that will be instantiated afterwards
         self.p0 = None
         self.p1 = None
         self.pc = None
@@ -98,12 +98,11 @@ class MixtureGeoms(Learner):
 
     @staticmethod
     def log_lik(Y, delta, coeffs):
-        """
-        Computes the log-likelihood of the censoring mixture of two
+        """Computes the log-likelihood of the censoring mixture of two
         geometric distributions
 
         :param Y: ndarray
-            Data
+            Temporal data
         :param delta: ndarray
             Censoring indicator
         :param coeffs: ndarray, shape=(4,)
@@ -118,19 +117,18 @@ class MixtureGeoms(Learner):
             The value of the log-likelihood
         """
         p0, p1, pc, pi = coeffs[0], coeffs[1], coeffs[2], coeffs[3]
-        prb = ((pi * p0 * (1. - p0) ** (Y - 1.) \
-                + (1. - pi) * p1 * (1. - p1) ** (Y - 1.) \
-                ) * (1. - pc) ** Y \
+        prb = ((pi * p0 * (1. - p0) ** (Y - 1.)
+                + (1. - pi) * p1 * (1. - p1) ** (Y - 1.)
+                ) * (1. - pc) ** Y
                ) ** delta \
-              * ((pi * (1 - p0) ** Y \
-                  + (1. - pi) * (1. - p1) ** Y \
+              * ((pi * (1 - p0) ** Y
+                  + (1. - pi) * (1. - p1) ** Y
                   ) * pc * (1. - pc) ** (Y - 1.)
                  ) ** (1. - delta)
         return np.mean(np.log(prb))
 
     def fit(self, Y, delta, model):
-        """
-        Fit the censoring mixture of geometric distributions 
+        """Fit the censoring mixture of geometric distributions
         with two components
         """
         verbose = self.verbose
@@ -139,7 +137,7 @@ class MixtureGeoms(Learner):
         tol = self.tol
         self._start_solve()
 
-        # Split at random the sample with proba 0.5
+        # Split at random the sample with probability 0.5
         n_samples = Y.shape[0]
         pi = 0.5
         Z = np.random.binomial(1, pi, size=n_samples)
@@ -153,7 +151,7 @@ class MixtureGeoms(Learner):
         if model == 'CURE':
             p0 = 0
         pc = 1. / np.mean(Y[delta == 0])
-        
+
         log_lik = self.log_lik(Y, delta, np.array([p0, p1, pc, pi]))
         obj = -log_lik
         rel_obj = 1.
@@ -168,10 +166,10 @@ class MixtureGeoms(Learner):
                 if verbose:
                     self.history.print_history()
             # E-Step
-            a = ( (1. - p1) ** (Y - 1.) * p1 ) ** delta * ( (1. - p1) ** Y ) \
-                ** (1. - delta) * (1. - pi)
-            b = ( (1. - p0) ** (Y - 1.) * p0 ) ** delta * ( (1. - p0) ** Y ) \
-                ** (1. - delta) * pi
+            a = ((1. - p1) ** (Y - 1.) * p1) ** delta * ((1. - p1) ** Y) ** (
+                1. - delta) * (1. - pi)
+            b = ((1. - p0) ** (Y - 1.) * p0) ** delta * ((1. - p0) ** Y) ** (
+                1. - delta) * pi
             q = a / (a + b)
             # M-Step
             if model == 'C-mix':
@@ -186,8 +184,7 @@ class MixtureGeoms(Learner):
                 break
 
         n_iter += 1
-        self.history.update(n_iter=n_iter, obj=obj,
-                            rel_obj=rel_obj)
+        self.history.update(n_iter=n_iter, obj=obj, rel_obj=rel_obj)
         if verbose:
             self.history.print_history()
         self._end_solve()
@@ -196,12 +193,11 @@ class MixtureGeoms(Learner):
         self.pc = pc
         self.pi = pi
         self.coeffs[:] = np.array([p0, p1, pc, pi])
-        return None       
+        return None
 
 
-class qnem(Learner):
-    """
-    QNEM Algorithm for fitting a censoring mixture of geometric distributions 
+class QNEM(Learner):
+    """QNEM Algorithm for fitting a censoring mixture of geometric distributions
     with two components and elasticNet regularization
     """
 
@@ -217,7 +213,7 @@ class qnem(Learner):
         self.model = model
         self.intercept = intercept
 
-        # attributes that will be instantiated afterwards
+        # Attributes that will be instantiated afterwards
         self.coeffs = None
         self.coeffs_ext = None
         self.p1 = None
@@ -230,13 +226,13 @@ class qnem(Learner):
         self.l_elastic_net_chosen = None
         self.grid_elastic_net = None
         self.n_features = None
+        self.n_samples = None
         self.adaptative_grid = None
         self.grid_size = None
 
     @staticmethod
     def logistic_grad(z):
-        """
-        Overflow proof computation of 1 / (1 + exp(-z)))
+        """Overflow proof computation of 1 / (1 + exp(-z)))
         """
         idx_pos = np.where(z >= 0.)
         idx_neg = np.where(z < 0.)
@@ -247,8 +243,7 @@ class qnem(Learner):
 
     @staticmethod
     def logistic_loss(z):
-        """
-        Overflow proof computation of log(1 + exp(-z))
+        """Overflow proof computation of log(1 + exp(-z))
         """
         idx_pos = np.where(z >= 0.)
         idx_neg = np.where(z < 0.)
@@ -259,22 +254,18 @@ class qnem(Learner):
         return res
 
     def _func_pen(self, coeffs_ext):
-        """
-        Computes the elasticNet penalization of the global objective to be 
+        """Computes the elasticNet penalization of the global objective to be
         minimized by the QNEM algorithm
         """
         l_elastic_net = self.l_elastic_net
         eta = self.eta
         n_features = self.n_features
-
         coeffs = coeffs_ext[:n_features] - coeffs_ext[n_features:]
-
-        return l_elastic_net * ((1. - eta) * coeffs_ext.sum() \
+        return l_elastic_net * ((1. - eta) * coeffs_ext.sum()
                                 + 0.5 * eta * np.linalg.norm(coeffs) ** 2)
-        
-    def _grad_pen(self, coeffs_ext):
-        """
-        Computes the gradient of the elasticNet penalization of the global 
+
+    def _grad_pen(self, coeffs):
+        """Computes the gradient of the elasticNet penalization of the global
         objective to be minimized by the QNEM algorithm
         """
         l_elastic_net = self.l_elastic_net
@@ -284,31 +275,29 @@ class qnem(Learner):
         # Gradient of lasso penalization
         grad += l_elastic_net * (1 - eta)
         # Gradient of ridge penalization
-        grad_pos = l_elastic_net * eta
-        grad[:n_features] += grad_pos
-        grad[n_features:] -= grad_pos
-        return grad 
-    
+        grad_pos = (l_elastic_net * eta)
+        grad[:n_features] += grad_pos * coeffs
+        grad[n_features:] -= grad_pos * coeffs
+        return grad
+
     def _log_lik(self, X, Y, delta):
-        """
-        Computes the likelihood of the censoring mixture model
+        """Computes the likelihood of the censoring mixture model
         """
         pi = self.predict_proba(X, self.intercept, self.coeffs)
         p0, p1, pc = self.p0, self.p1, self.pc
-        prb = ((pi * p0 * (1. - p0) ** (Y - 1.) \
-                + (1. - pi) * p1 * (1. - p1) ** (Y - 1.) \
-                ) * (1. - pc) ** Y \
+        prb = ((pi * p0 * (1. - p0) ** (Y - 1.)
+                + (1. - pi) * p1 * (1. - p1) ** (Y - 1.)
+                ) * (1. - pc) ** Y
                ) ** delta \
-              * ((pi * (1 - p0) ** Y \
-                  + (1. - pi) * (1. - p1) ** Y \
-                  ) * pc * (1. - pc) ** (Y - 1.) \
+              * ((pi * (1 - p0) ** Y
+                  + (1. - pi) * (1. - p1) ** Y
+                  ) * pc * (1. - pc) ** (Y - 1.)
                  ) ** (1. - delta)
         return np.mean(np.log(prb))
-    
+
     @staticmethod
     def _c_index(Y, delta, marker):
-        """
-        Compute the C-index score for a given marker vector and the 
+        """Compute the C-index score for a given marker vector and the
         corresponding times and censoring indicator vectors, using the R 
         package survival
         """
@@ -324,18 +313,17 @@ class qnem(Learner):
         ro.r('library(survival)')
         ro.r('surv <- Surv(time=Y, event=delta, type="right")')
         C_index = ro.r('survConcordance(surv ~ marker)$concordance')
-        C_index = max(C_index,1-C_index)
+        C_index = max(C_index, 1 - C_index)
         return C_index
 
     def _func_obj(self, X, Y, delta, coeffs_ext):
-        """
-        The global objective to be minimized by the QNEM algorithm
+        """The global objective to be minimized by the QNEM algorithm
         (including penalization)
         """
         n_features = self.n_features
         if self.intercept:
-            coeffs = coeffs_ext[:n_features+1] - coeffs_ext[n_features+1:]
-            coeffs_ext = np.delete(coeffs_ext, [0,n_features+1])
+            coeffs = coeffs_ext[:n_features + 1] - coeffs_ext[n_features + 1:]
+            coeffs_ext = np.delete(coeffs_ext, [0, n_features + 1])
         else:
             coeffs = coeffs_ext[:n_features] - coeffs_ext[n_features:]
         self.coeffs = coeffs
@@ -344,8 +332,7 @@ class qnem(Learner):
         return -log_lik + pen
 
     def _func_sub_obj(self, X, q, coeffs_ext):
-        """
-        Computes the objective, namely the function to be minimized at
+        """Computes the objective, namely the function to be minimized at
         each QNEM iteration using fmin_l_bfgs_b, for the incidence part 
         of the model. It computes
             mean( -q_i -x_i^Y beta - log(1 + exp(-x_i^Y beta)) 
@@ -377,8 +364,7 @@ class qnem(Learner):
         return sub_obj + pen
 
     def _grad_sub_obj(self, X, q, coeffs_ext):
-        """
-        Computes the gradient of the objective used in fmin_l_bfgs_b
+        """Computes the gradient of the objective used in fmin_l_bfgs_b
         """
         n_features = self.n_features
         n_samples = self.n_samples
@@ -386,12 +372,11 @@ class qnem(Learner):
             coeffs = coeffs_ext[:n_features + 1] - coeffs_ext[n_features + 1:]
             coeffs_0 = coeffs[0]
             coeffs = coeffs[1:]
-            coeffs_ext = np.delete(coeffs_ext, [0, n_features + 1])
         else:
             coeffs_0 = 0
             coeffs = coeffs_ext[:n_features] - coeffs_ext[n_features:]
 
-        grad_pen = self._grad_pen(coeffs_ext)
+        grad_pen = self._grad_pen(coeffs)
         u = coeffs_0 + X.dot(coeffs)
 
         if self.intercept:
@@ -399,13 +384,13 @@ class qnem(Learner):
                                axis=1)
             grad_pen = np.concatenate([[0], grad_pen[:n_features], [0],
                                        grad_pen[n_features:]])
-        grad = (X * (q - self.logistic_grad(u)).reshape(n_samples, 1)).mean(axis=0)
+        grad = (X * (q - self.logistic_grad(-u)).reshape(n_samples, 1)).mean(
+            axis=0)
         grad_sub_obj = np.concatenate([grad, -grad])
         return grad_sub_obj + grad_pen
-        
+
     def fit(self, X, Y, delta):
-        """
-        Fit the supervised censoring mixture of geometric distributions.
+        """Fit the supervised censoring mixture of geometric distributions.
         After the call to the method, trained parameters are saved
         in self.p0, self.p1 and self.coeffs
         """
@@ -425,17 +410,14 @@ class qnem(Learner):
         # Initialize coeffs to 0. which makes pi all equal to 0.5
         if intercept:
             n_features += 1
-        coeffs = np.empty(n_features)
-        coeffs.fill(0.)
+        coeffs = np.zeros(n_features)
         coeffs_ext = np.zeros(2 * n_features)
-        coeffs_ext[:n_features] = coeffs
 
         func_obj = self._func_obj
         func_sub_obj = self._func_sub_obj
         grad_sub_obj = self._grad_sub_obj
 
-        # We initialize p0 and p1 by fitting a censoring mixture 
-        # of geometrics
+        # We initialize p0 and p1 by fitting a censoring mixture of geometrics
         mixt_geoms = MixtureGeoms(max_iter=max_iter, verbose=False,
                                   print_every=print_every, tol=tol)
         mixt_geoms.fit(Y, delta, model)
@@ -444,8 +426,8 @@ class qnem(Learner):
         pc = mixt_geoms.pc
         self.p0, self.p1, self.pc = p0, p1, pc
         if verbose:
-            print 'init: p0=%s' % p0
-            print 'init: p1=%s' % p1
+            print("init: p0=%s" % p0)
+            print("init: p1=%s" % p1)
 
         obj = func_obj(X, Y, delta, coeffs_ext)
         rel_obj = 1.
@@ -461,10 +443,10 @@ class qnem(Learner):
             pi = self.predict_proba(X, intercept, coeffs)
 
             # E-Step
-            a = ((1. - p1) ** (Y - 1.) * p1) ** delta * ((1. - p1) ** Y) \
-                                                        ** (1. - delta) * (1. - pi)
-            b = ((1. - p0) ** (Y - 1.) * p0) ** delta * ((1. - p0) ** Y) \
-                                                        ** (1. - delta) * pi
+            a = ((1. - p1) ** (Y - 1.) * p1) ** delta * ((1. - p1) ** Y) ** (
+                1. - delta) * (1. - pi)
+            b = ((1. - p0) ** (Y - 1.) * p0) ** delta * ((1. - p0) ** Y) ** (
+                1. - delta) * pi
             q = a / (a + b)
 
             # M-Step
@@ -478,11 +460,9 @@ class qnem(Learner):
             else:
                 x0 = np.zeros(2 * n_features)
             coeffs_ext = fmin_l_bfgs_b(
-                func=lambda coeffs_ext_: func_sub_obj(
-                    X, q, coeffs_ext_),
+                func=lambda coeffs_ext_: func_sub_obj(X, q, coeffs_ext_),
                 x0=x0,
-                fprime=lambda coeffs_ext_: grad_sub_obj(
-                    X, q, coeffs_ext_),
+                fprime=lambda coeffs_ext_: grad_sub_obj(X, q, coeffs_ext_),
                 disp=False,
                 bounds=bounds,
                 maxiter=50,
@@ -496,24 +476,22 @@ class qnem(Learner):
             rel_obj = abs(obj - prev_obj) / abs(prev_obj)
             if (n_iter > max_iter) or (rel_obj < tol):
                 break
-            
+
         n_iter += 1
         self.history.update(n_iter=n_iter, obj=obj, rel_obj=rel_obj)
         if verbose:
             self.history.print_history()
-            print 'At the end: p0=%s' % p0
-            print 'At the end: p1=%s' % p1
-            
+            print("At the end: p0=%s" % p0)
+            print("At the end: p1=%s" % p1)
+
         self._end_solve()
         self.p0, self.p1 = p0, p1
-        self.pi = pi 
+        self.pi = pi
         self.coeffs = -coeffs
-        return None
 
     @staticmethod
     def predict_proba(X, intercept, coeffs):
-        """
-        Computes the probabilities of being on the low-risk group
+        """Computes the probabilities of being on the low-risk group
         """
         if intercept:
             coeffs_0 = coeffs[0]
@@ -521,26 +499,25 @@ class qnem(Learner):
         else:
             coeffs_0 = 0
         u = coeffs_0 + X.dot(coeffs)
-        return qnem.logistic_grad(u)
+        return QNEM.logistic_grad(u)
 
     def score(self, X, Y, delta, metric):
-        """
-        Computes the score with the trained parameters on the given data,
+        """Computes the score with the trained parameters on the given data,
         either log-likelihood or C-index
         """
         if metric == 'log_lik':
             return self._log_lik(X, Y, delta)
 
         if metric == 'C-index':
-            return self._c_index(Y, delta, self.predict_proba(X,
-                                                              self.intercept, self.coeffs))
+            return self._c_index(Y, delta, self.predict_proba(X, self.intercept,
+                                                              self.coeffs))
 
-    def cross_validate(self, X, Y, delta, n_folds=3, eta=0.1, adaptative_grid=True,
-                       grid_size=50, grid_elastic_net=np.array([0]),
-                       shuffle=True, verbose=True, metric='log_lik'):
-        """
-        Apply n_folds cross-validation using the given data, to select the best
-        penalization parameter
+    def cross_validate(self, X, Y, delta, n_folds=3, eta=0.1,
+                       adaptative_grid=True, grid_size=50,
+                       grid_elastic_net=np.array([0]), shuffle=True,
+                       verbose=True, metric='log_lik'):
+        """Apply n_folds cross-validation using the given data, to select the
+        best penalization parameter
         """
         from sklearn.cross_validation import KFold
         n_samples = Y.shape[0]
@@ -554,12 +531,13 @@ class qnem(Learner):
 
         if adaptative_grid:
             # from KKT condition:
-            gamma_max = 1. / np.log(10.) * np.log(1. / (1. - eta) * (.5 / n_samples) \
-                                                  * np.absolute(X).sum(axis=0).max())
+            gamma_max = 1. / np.log(10.) * np.log(
+                1. / (1. - eta) * (.5 / n_samples) \
+                * np.absolute(X).sum(axis=0).max())
             grid_elastic_net = np.logspace(gamma_max - 4, gamma_max, grid_size)
 
         learners = [
-            qnem(verbose=False, tol=tol, eta=eta, warm_start=warm_start,
+            QNEM(verbose=False, tol=tol, eta=eta, warm_start=warm_start,
                  model=model, intercept=self.intercept)
             for _ in range(n_folds)
             ]
@@ -570,10 +548,10 @@ class qnem(Learner):
             verbose = self.verbose
         for idx_elasticNet, l_elastic_net in enumerate(grid_elastic_net):
             if verbose:
-                print "Testing l_elastic_net=%.2e" % l_elastic_net, "on fold",
+                print("Testing l_elastic_net=%.2e" % l_elastic_net, "on fold"),
             for n_fold, (idx_train, idx_test) in enumerate(cv):
                 if verbose:
-                    print n_fold,
+                    print(n_fold),
                 X_train = X[idx_train]
                 X_test = X[idx_test]
                 Y_train = Y[idx_train]
@@ -586,7 +564,7 @@ class qnem(Learner):
                 scores[idx_elasticNet, n_fold] = learner.score(
                     X_test, Y_test, delta_test, metric)
             if verbose:
-                print ": avg_score=%.2e" % scores[idx_elasticNet, :].mean()
+                print(": avg_score=%.2e" % scores[idx_elasticNet, :].mean())
 
         self.scores = scores
         avg_scores = scores.mean(axis=1)
