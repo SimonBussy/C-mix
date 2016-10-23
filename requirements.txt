@@ -1,0 +1,8 @@
+numpy
+numpydoc
+scipy
+matplotlib
+sphinx
+sklearn
+pandas
+rpy2

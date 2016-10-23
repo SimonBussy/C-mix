@@ -252,4 +252,8 @@ class CensoredGeomMixtureRegression(Simulation):
         self.delta = delta
         self.Y = Y
 
+<<<<<<< HEAD
         return features, Y, delta, Z, pi
+=======
+        return features, Y, delta, Z, pi
+>>>>>>> 563bcf79c3de9c930f695693923967f0ca43595c

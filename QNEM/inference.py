@@ -375,8 +375,15 @@ class QNEM(Learner):
         else:
             coeffs_0 = 0
             coeffs = coeffs_ext[:n_features] - coeffs_ext[n_features:]
+<<<<<<< HEAD
         grad_pen = self._grad_pen(coeffs)
         u = coeffs_0 + X.dot(coeffs)
+=======
+
+        grad_pen = self._grad_pen(coeffs)
+        u = coeffs_0 + X.dot(coeffs)
+
+>>>>>>> 563bcf79c3de9c930f695693923967f0ca43595c
         if self.intercept:
             X = np.concatenate((np.ones(n_samples).reshape(1, n_samples).T, X),
                                axis=1)
@@ -582,4 +589,8 @@ class QNEM(Learner):
         l_elastic_net_chosen = grid_elastic_net[idx_chosen]
         self.grid_elastic_net = grid_elastic_net
         self.l_elastic_net_best = l_elastic_net_best
+<<<<<<< HEAD
         self.l_elastic_net_chosen = l_elastic_net_chosen
+=======
+        self.l_elastic_net_chosen = l_elastic_net_chosen
+>>>>>>> 563bcf79c3de9c930f695693923967f0ca43595c
