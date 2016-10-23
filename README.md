@@ -14,14 +14,6 @@ In order to install you must have the required Python dependencies:
 
     pip install -r requirements.txt
 
-In order to install you must run
-
-    python setup.py build_ext --inplace
-
-In order to declare the package path to python you should put in the .bashrc file something like
-
-    export PYTHONPATH=$PYTHONPATH:~/Programmation/Python/?
-
 ### Unittest
 
 The library can be tested simply by running
