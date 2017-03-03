@@ -19,12 +19,12 @@ def features_normal_cov_toeplitz(n_samples=200, n_features=10, rho=0.5):
     n_features : `int`, default=10
         Number of features
 
-    rho: float
+    rho : `float`, default=0.5
         Correlation coefficient of the toeplitz correlation matrix
 
     Returns
     -------
-    output: ndarray, shape=[n_samples, n_features]
+    output : `np.ndarray`, shape=(n_samples, n_features)
     """
     cov = toeplitz(rho ** np.arange(0, n_features))
     return np.random.multivariate_normal(
@@ -94,54 +94,54 @@ class CensoredGeomMixtureRegression(Simulation):
 
     Parameters
     ----------
-    verbose: boolean
+    verbose : `bool`
         Verbose mode to detail or not ongoing tasks
 
-    n_samples: int
+    n_samples : `int`
         Number of samples
 
-    n_features: int
+    n_features : `int`
         Number of features
 
-    nb_active_features: int
+    nb_active_features : `int`
         Number of active features
 
-    K: float
+    K : `float`
         Value of the active coefficients
 
-    rho: float
+    rho : `float`
         Coefficient of the Toeplitz correlation matrix
 
-    pi_0: float
-        Proportion of desired low risk patients rate
+    pi_0 : `float`
+        Proportion of desired low risk samples rate
 
-    gap: float
+    gap : `float`
         Gap value to create high/low risk groups
 
-    r_c: float
+    r_c : `float`
         Censoring rate
 
-    r_cf: float
+    r_cf : `float`
         Confusion factors rate
 
-    p0: float
+    p0 : `float`
         Geometric parameter for low risk group
 
-    p1: float
+    p1 : `float`
         Geometric parameter for high risk group
 
-    seed: int
+    seed : `int`, default=None
         For reproducible simulation
 
     Attributes
     ----------
-    Y: ndarray
-        Temporal data
+    Y : `np.ndarray`, shape=(n_samples,)
+        Times of the event of interest
 
-    Z: ndarray
+    Z : `np.ndarray`, shape=(n_samples,)
         Latent variable
 
-    delta: ndarray
+    delta : `np.ndarray`, shape=(n_samples,)
         Censoring indicator
     """
 
@@ -178,7 +178,7 @@ class CensoredGeomMixtureRegression(Simulation):
 
     @staticmethod
     def poldeg2_solver(a=0, b=0, c=0):
-        """2nd order polynomial solver
+        """Second order polynomial solver
         """
         if a == 0:
             if b == 0:
@@ -195,7 +195,18 @@ class CensoredGeomMixtureRegression(Simulation):
 
     @simulation_method
     def simulate(self):
-        """Launch simulation of the data.
+        """Launch simulation of the data
+
+        Returns
+        -------
+        features : `numpy.ndarray`, shape=(n_samples, n_features)
+            The features matrix
+
+        Y : `np.ndarray`, shape=(n_samples,)
+            Times of the event of interest
+
+        delta : `np.ndarray`, shape=(n_samples,)
+            Censoring indicator
         """
         n_samples = self.n_samples
         n_features = self.n_features
@@ -271,5 +282,4 @@ class CensoredGeomMixtureRegression(Simulation):
             Y += 1
         self.delta = delta
         self.Y = Y
-        return features, Y, delta, Z, pi
-
+        return features, Y, delta

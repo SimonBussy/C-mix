@@ -108,7 +108,7 @@ class History():
         print_style = self.print_style
         line = ' | '.join([(print_style[name] % values[name][-1])
                           .rjust(col_widths[i])
-                           for i, name in enumerate(print_order) \
+                           for i, name in enumerate(print_order)
                            if name in values])
         print(line)
 
