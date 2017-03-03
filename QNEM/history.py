@@ -101,8 +101,8 @@ class History():
             line = ' | '.join([name.center(min_width) for name in
                                print_order if name in values])
             names = [name.center(min_width) for name in print_order]
-            self.col_widths = map(len, names)
-            print line
+            self.col_widths = list(map(len, names))
+            print(line)
 
         col_widths = self.col_widths
         print_style = self.print_style
@@ -110,7 +110,7 @@ class History():
                           .rjust(col_widths[i])
                            for i, name in enumerate(print_order) \
                            if name in values])
-        print line
+        print(line)
 
     def get_values(self):
         return self.values

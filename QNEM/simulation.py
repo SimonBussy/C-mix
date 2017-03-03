@@ -7,14 +7,20 @@ from scipy.linalg.special_matrices import toeplitz
 import numpy as np
 
 
-def features_normal_cov_toeplitz(n_samples, n_features, rho=0.5):
+def features_normal_cov_toeplitz(n_samples=200, n_features=10, rho=0.5):
     """Features obtained as samples of a centered Gaussian vector
     with a toeplitz covariance matrix
 
     Parameters
     ----------
+    n_samples : `int`, default=200
+        Number of samples
+
+    n_features : `int`, default=10
+        Number of features
+
     rho: float
-        correlation coefficient of the toeplitz correlation matrix
+        Correlation coefficient of the toeplitz correlation matrix
 
     Returns
     -------
@@ -90,28 +96,40 @@ class CensoredGeomMixtureRegression(Simulation):
     ----------
     verbose: boolean
         Verbose mode to detail or not ongoing tasks
+
     n_samples: int
-        Number of patients
+        Number of samples
+
     n_features: int
         Number of features
+
     nb_active_features: int
         Number of active features
+
     K: float
         Value of the active coefficients
+
     rho: float
         Coefficient of the Toeplitz correlation matrix
+
     pi_0: float
         Proportion of desired low risk patients rate
+
     gap: float
         Gap value to create high/low risk groups
+
     r_c: float
         Censoring rate
+
     r_cf: float
         Confusion factors rate
+
     p0: float
-        Geometric parameter for low risk patients
+        Geometric parameter for low risk group
+
     p1: float
-        Geometric parameter for high risk patients
+        Geometric parameter for high risk group
+
     seed: int
         For reproducible simulation
 
@@ -119,8 +137,10 @@ class CensoredGeomMixtureRegression(Simulation):
     ----------
     Y: ndarray
         Temporal data
+
     Z: ndarray
         Latent variable
+
     delta: ndarray
         Censoring indicator
     """
