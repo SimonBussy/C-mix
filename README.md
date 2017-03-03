@@ -7,8 +7,8 @@ You may be interested if you face a supervised problem with temporal labels and 
 
 You must have :
 
-- python >= 2.7
-- R >= 3.1
+- python >= 3.6
+- R >= 3.3
 
 In order to install you must have the required Python dependencies:
 
@@ -18,9 +18,19 @@ In order to install you must have the required Python dependencies:
 
 The library can be tested simply by running
 
-    python -m unittest discover -v . "*_test.py"
+    python -m unittest discover -v . "*tests.py"
 
 in terminal. This shall check that everything is working and in order...
+
+To use the package outside the build directory, the build path should be added to the `PYTHONPATH` environment variable, as such (replace `$PWD` with the full path to the build directory if necessary):
+
+    export PYTHONPATH=$PYTHONPATH:$PWD/QNEM
+
+For a permanent installation, this should be put in your shell setup script. To do so, you can run this from the _tick_ directory:
+
+    echo 'export PYTHONPATH=$PYTHONPATH:'$PWD/QNEM >> ~/.bashrc
+
+Replace `.bashrc` with the variant for your shell (e.g. `.tcshrc`, `.zshrc`, `.cshrc` etc.).
 
 ### Other files
 
