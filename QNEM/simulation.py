@@ -177,7 +177,7 @@ class CensoredGeomMixtureRegression(Simulation):
         return res
 
     @staticmethod
-    def poldeg2_solver(a=0, b=0, c=0):
+    def poldeg2_solver(a, b, c):
         """Second order polynomial solver
         """
         if a == 0:

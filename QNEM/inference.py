@@ -6,10 +6,7 @@ from datetime import datetime
 from QNEM.history import History
 from time import time
 from scipy.optimize import fmin_l_bfgs_b
-import rpy2.robjects as ro
-import rpy2.robjects.numpy2ri
-
-rpy2.robjects.numpy2ri.activate()
+from lifelines.utils import concordance_index as c_index
 
 
 class Learner:
@@ -409,43 +406,6 @@ class QNEM(Learner):
                  ) ** (1. - delta)
         return np.mean(np.log(prb))
 
-    @staticmethod
-    def _c_index(Y, delta, marker):
-        """Compute the C-index score for a given marker vector and the
-        corresponding times and censoring indicator vectors, using the R 
-        package survival
-
-        Parameters
-        ----------
-        Y : `np.ndarray`, shape=(n_samples,)
-            Times of the event of interest
-
-        delta : `np.ndarray`, shape=(n_samples,)
-            Censoring indicator
-
-        marker : `np.ndarray`, shape=(n_samples,)
-            Marker vector
-
-        Returns
-        -------
-        output : `float`
-            The C-index between the right-censored times and the markers
-        """
-        n_samples_test = Y.shape[0]
-        data = np.concatenate((Y.reshape(n_samples_test, 1),
-                               delta.reshape(n_samples_test, 1),
-                               marker.reshape(n_samples_test, 1)),
-                              axis=1)
-        ro.globalenv['data'] = data
-        ro.r('Y = data[,1]')
-        ro.r('delta = data[,2]')
-        ro.r('marker = data[,3]')
-        ro.r('library(survival)')
-        ro.r('surv <- Surv(time=Y, event=delta, type="right")')
-        C_index = ro.r('survConcordance(surv ~ marker)$concordance')
-        C_index = max(C_index, 1 - C_index)
-        return C_index
-
     def _func_obj(self, X, Y, delta, coeffs_ext):
         """The global objective to be minimized by the QNEM algorithm
         (including penalization)
@@ -606,6 +566,7 @@ class QNEM(Learner):
         p0 = mixt_geoms.p0
         p1 = mixt_geoms.p1
         pc = mixt_geoms.pc
+
         self.p0, self.p1, self.pc = p0, p1, pc
         if verbose:
             print("init: p0=%s" % p0)
@@ -647,7 +608,8 @@ class QNEM(Learner):
                 fprime=lambda coeffs_ext_: grad_sub_obj(X, q, coeffs_ext_),
                 disp=False,
                 bounds=bounds,
-                maxiter=50,
+                maxiter=60,
+                # pgtol=1e-20
                 pgtol=1e-5
             )[0]
 
@@ -669,7 +631,8 @@ class QNEM(Learner):
         self._end_solve()
         self.p0, self.p1 = p0, p1
         self.pi = pi
-        self.coeffs = -coeffs
+        # self.coeffs = -coeffs
+        self.coeffs = coeffs
 
     @staticmethod
     def predict_proba(X, fit_intercept, coeffs):
@@ -730,9 +693,8 @@ class QNEM(Learner):
             return self._log_lik(X, Y, delta)
 
         if metric == 'C-index':
-            return self._c_index(Y, delta,
-                                 self.predict_proba(X, self.fit_intercept,
-                                                    self.coeffs))
+            return c_index(Y, self.predict_proba(X, self.fit_intercept,
+                                                 self.coeffs), delta)
 
     def cross_validate(self, X, Y, delta, n_folds=3, eta=0.1,
                        adaptative_grid=True, grid_size=50,
@@ -804,7 +766,7 @@ class QNEM(Learner):
             QNEM(verbose=False, tol=tol, eta=eta, warm_start=warm_start,
                  model=model, fit_intercept=self.fit_intercept)
             for _ in range(n_folds)
-            ]
+        ]
 
         n_grid_elastic_net = grid_elastic_net.shape[0]
         scores = np.empty((n_grid_elastic_net, n_folds))
@@ -828,22 +790,16 @@ class QNEM(Learner):
             if verbose:
                 print(": avg_score=%.2e" % scores[idx_elasticNet, :].mean())
 
-        self.scores = scores
-        avg_scores = scores.mean(axis=1)
-        self.avg_scores = avg_scores
-
-        idx_best = np.unravel_index(avg_scores.argmax(), avg_scores.shape)[0]
+        avg_scores = scores.mean(1)
+        std_scores = scores.std(1)
+        idx_best = avg_scores.argmax()
         l_elastic_net_best = grid_elastic_net[idx_best]
-        idx = [i for i, j in enumerate(
-            list(avg_scores >= avg_scores.max() - np.std(avg_scores))
-        )
-               if j]
-        if len(idx) > 0 and max(idx) != len(avg_scores) - 1:
-            idx_chosen = max(idx)
-        else:
-            idx_chosen = idx_best
-
+        idx_chosen = max([i for i, j in enumerate(
+            list(avg_scores >= avg_scores.max() - std_scores[idx_best])) if j])
         l_elastic_net_chosen = grid_elastic_net[idx_chosen]
+
         self.grid_elastic_net = grid_elastic_net
         self.l_elastic_net_best = l_elastic_net_best
         self.l_elastic_net_chosen = l_elastic_net_chosen
+        self.scores = scores
+        self.avg_scores = avg_scores

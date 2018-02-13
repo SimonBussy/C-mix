@@ -1,10 +1,8 @@
 import unittest
-import rpy2.robjects as ro
-import pandas as pd
-import numpy as np
 from QNEM.inference import QNEM
 from QNEM.simulation import CensoredGeomMixtureRegression
 from sklearn.model_selection import ShuffleSplit
+from lifelines.utils import concordance_index as c_index
 
 
 class Test(unittest.TestCase):
@@ -64,19 +62,9 @@ class Test(unittest.TestCase):
         learner.fit(X, Y, delta)
 
         coeffs = learner.coeffs
-        marker = QNEM.predict_proba(X_test, fit_intercept, coeffs)
+        estimated_risk = QNEM.predict_proba(X_test, fit_intercept, coeffs)
+        c_index(Y_test, estimated_risk, delta_test)
 
-        nb_t = 14
-        timesAUC = pd.DataFrame(Y).quantile(
-            q=(1. / nb_t + np.linspace(0, 1, nb_t, endpoint=False))[1:-1]
-        ).drop_duplicates().as_matrix()
-
-        ro.globalenv['Y_test'] = Y_test
-        ro.globalenv['delta_test'] = delta_test
-        ro.globalenv['marker'] = marker
-        ro.globalenv['timesAUC'] = timesAUC
-        ro.r('library(timeROC)')
-        ro.r('auc_t = timeROC(Y_test,delta_test,marker,cause=1,times=timesAUC)')
 
 if __name__ == "main":
     unittest.main()
