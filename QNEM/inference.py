@@ -6,7 +6,7 @@ from datetime import datetime
 from QNEM.history import History
 from time import time
 from scipy.optimize import fmin_l_bfgs_b
-from lifelines.utils import concordance_index as c_index
+from lifelines.utils import concordance_index as c_index_score
 
 
 class Learner:
@@ -693,8 +693,8 @@ class QNEM(Learner):
             return self._log_lik(X, Y, delta)
 
         if metric == 'C-index':
-            return c_index(Y, self.predict_proba(X, self.fit_intercept,
-                                                 self.coeffs), delta)
+            return c_index_score(Y, self.predict_proba(X, self.fit_intercept,
+                                                       self.coeffs), delta)
 
     def cross_validate(self, X, Y, delta, n_folds=3, eta=0.1,
                        adaptative_grid=True, grid_size=50,
