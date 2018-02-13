@@ -5,11 +5,7 @@ You may be interested if you face a supervised problem with temporal labels and 
 
 ## Installation 
 
-You must have :
-
-- python >= 3.6
-- R >= 3.3
-
+You must have python >= 3.6
 In order to install you must have the required Python dependencies:
 
     pip install -r requirements.txt
