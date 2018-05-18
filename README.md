@@ -3,6 +3,8 @@
 The code provided enable you to run both C-mix and CURE models in high dimension.
 You may be interested if you face a supervised problem with temporal labels and you want to predict relative risks.
 
+This implementation is used in the paper "C-mix: a high dimensional mixture model for censored durations, with applications to genetic data" published in [SMMR](http://journals.sagepub.com/home/smm) journal (Statistical Methods in Medical Research) and available [here](https://arxiv.org/abs/1610.07407).
+
 ## Installation 
 
 You must have python >= 3.6
