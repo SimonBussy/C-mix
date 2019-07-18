@@ -636,7 +636,7 @@ class QNEM(Learner):
 
     @staticmethod
     def predict_proba(X, fit_intercept, coeffs):
-        """Probability estimates for being on the low-risk group.
+        """Probability estimates for being on the high-risk group.
 
         The returned estimates for all classes are ordered by the
         label of classes.
@@ -656,7 +656,7 @@ class QNEM(Learner):
         -------
         output : `np.ndarray`, shape=(n_samples,)
             Returns the probability of the sample for being on
-            the low-risk group
+            the high-risk group
         """
         if fit_intercept:
             coeffs_0 = coeffs[0]
