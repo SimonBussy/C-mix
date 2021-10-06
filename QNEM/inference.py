@@ -396,12 +396,12 @@ class QNEM(Learner):
         """
         pi = self.predict_proba(X, self.fit_intercept, self.coeffs)
         p0, p1, pc = self.p0, self.p1, self.pc
-        prb = ((pi * p0 * (1. - p0) ** (Y - 1.)
-                + (1. - pi) * p1 * (1. - p1) ** (Y - 1.)
+        prb = (((1. - pi) * p0 * (1. - p0) ** (Y - 1.)
+                + pi * p1 * (1. - p1) ** (Y - 1.)
                 ) * (1. - pc) ** Y
                ) ** delta \
-              * ((pi * (1 - p0) ** Y
-                  + (1. - pi) * (1. - p1) ** Y
+              * (((1. - pi) * (1 - p0) ** Y
+                  + pi * (1. - p1) ** Y
                   ) * pc * (1. - pc) ** (Y - 1.)
                  ) ** (1. - delta)
         return np.mean(np.log(prb))
